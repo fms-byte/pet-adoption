@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { StyleSheet, Text, View, StatusBar, ScrollView } from "react-native";
 import { db } from "../firebase";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import AnimatedSplash from "react-native-animated-splash-screen";
 import FeedPosts from "../components/FeedPost";
 import TopBar from "../components/TopBar";
@@ -46,16 +47,16 @@ const Feed = ({ navigation }) => {
   };
 
   useEffect(() => {
-    db.collection("posts")
-      .orderBy("creation", "desc")
-      .onSnapshot((snapshot) => {
-        setPosts(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
-          }))
-        );
-      });
+    const unsubscribe = onSnapshot(
+      query(collection(db, "posts"), orderBy("creation", "desc")),
+      (snapshot) => {
+        const updatedPosts = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          data: doc.data(),
+        }));
+        setPosts(updatedPosts);
+      }
+    );
   }, [navigation]);
 
   return (

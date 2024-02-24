@@ -13,21 +13,22 @@ import { Ionicons } from "@expo/vector-icons";
 import Story from "../components/Story";
 
 import { db, auth } from "../firebase";
+import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 
 export default function Stories({ navigation }) {
   const [stories, setStories] = useState([]);
 
   useEffect(() => {
-    db.collection("stories")
-      .orderBy("creation", "desc")
-      .onSnapshot((snapshot) => {
-        setStories(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
-          }))
-        );
-      });
+    const unsubscribe = onSnapshot(
+      query(collection(db, "stories"), orderBy("creation", "desc")),
+      (snapshot) => {
+        const updatedStories = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          data: doc.data(),
+        }));
+        setStories(updatedStories);
+      }
+    );
   }, [navigation]);
 
   return (

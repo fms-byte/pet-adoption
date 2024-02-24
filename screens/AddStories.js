@@ -5,9 +5,9 @@ import {
   KeyboardAvoidingView,
   ScrollView,
 } from "react-native";
-import { Button } from "react-native-elements";
+import { Button } from '@rneui/base';
 import { db, auth } from "../firebase";
-import firebase from "firebase";
+import { FieldValue } from 'firebase/firestore';
 
 const AddStories = ({ navigation }) => {
   const [title, setTitle] = useState("");
@@ -22,7 +22,7 @@ const AddStories = ({ navigation }) => {
       videoId: links[3],
       title,
       story,
-      creation: firebase.firestore.FieldValue.serverTimestamp(),
+      creation: FieldValue.serverTimestamp(),
     });
 
     db.collection("profilePosts")
@@ -32,7 +32,7 @@ const AddStories = ({ navigation }) => {
         videoId: links[3],
         title,
         story,
-        creation: firebase.firestore.FieldValue.serverTimestamp(),
+        creation: FieldValue.serverTimestamp(),
       })
       .then(() => {
         navigation.goBack();

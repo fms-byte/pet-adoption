@@ -1,11 +1,9 @@
 import React, { useState, useLayoutEffect } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { StyleSheet, Text, View, Image, TextInput } from "react-native";
-import { Button } from "react-native-elements";
-import firebase from "firebase";
+import { Button } from '@rneui/base';
+import {setDoc, doc, getDoc, FieldValue} from "firebase/firestore";
 import { auth, db } from "../firebase";
-require("firebase/firestore");
-require("firebase/firebase-storage");
 import DropDownPicker from "react-native-dropdown-picker";
 import { TouchableOpacity, ScrollView } from "react-native-gesture-handler";
 import { ProgressBar } from "react-native-paper";
@@ -54,60 +52,6 @@ const Save = (props) => {
     }
   };
 
-  const uploadDoc = async (snapshot) => {
-    const childPathDoc = `healthDocs/${
-      auth.currentUser.uid
-    }/${Math.random().toString(36)}`;
-    if (healthDoc !== null) {
-      const res = await fetch(healthDoc);
-      const bl = await res.blob();
-      const task2 = firebase.storage().ref().child(childPathDoc).put(bl);
-
-      task2.on(
-        "state_changed",
-        null,
-        (error) => {
-          console.log(error);
-        },
-        () => {
-          task2.snapshot.ref.getDownloadURL().then((doc) => {
-            savePostData(snapshot, doc);
-          });
-        }
-      );
-    } else {
-      savePostData(snapshot, null);
-    }
-  };
-
-  const uploadImage = async () => {
-    const uri = props.route.params.image;
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    const childPath = `post/${auth.currentUser.uid}/${Math.random().toString(
-      36
-    )}`;
-
-    const task = firebase.storage().ref().child(childPath).put(blob);
-
-    const taskProgress = (snapshot) => {
-      console.log("Bytes transferred : " + snapshot.bytesTransferred);
-    };
-
-    const taskCompleted = () => {
-      task.snapshot.ref.getDownloadURL().then((snapshot) => {
-        setProgress(0.3);
-        uploadDoc(snapshot);
-      });
-    };
-
-    const taskError = (snapshot) => {
-      console.log(snapshot);
-    };
-
-    task.on("state_changed", taskProgress, taskError, taskCompleted);
-  };
-
   const savePostData = (downloadURL, docUrl) => {
     if (docUrl === null) {
       docUrl =
@@ -122,7 +66,7 @@ const Save = (props) => {
         number,
         petType,
         healthDoc: docUrl,
-        creation: firebase.firestore.FieldValue.serverTimestamp(),
+        creation: FieldValue.serverTimestamp(),
       })
       .then(() => {
         setProgress(0.6);
@@ -134,7 +78,7 @@ const Save = (props) => {
         petType,
         healthDoc: docUrl,
         number,
-        creation: firebase.firestore.FieldValue.serverTimestamp(),
+        creation: FieldValue.serverTimestamp(),
         userId: auth.currentUser.uid,
       })
       .then(() => {
@@ -144,6 +88,26 @@ const Save = (props) => {
         props.navigation.popToTop();
       });
   };
+
+  const uploadImage = async () => {
+    const uri = props.route.params.image;
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const childPath = `post/${auth.currentUser.uid}/${Math.random().toString(
+      36
+    )}`;
+
+    // Save the image URL directly to Firestore
+    db.collection("images").doc(childPath).set({ image: blob })
+      .then(() => {
+        setProgress(0.3);
+        savePostData(childPath, healthDoc);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
+
 
   return (
     <View style={{ flex: 1, backgroundColor: "white" }}>

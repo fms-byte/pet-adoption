@@ -5,7 +5,6 @@ import * as ImagePicker from "expo-image-picker";
 import { Entypo } from "@expo/vector-icons";
 
 import { Ionicons, AntDesign } from "react-native-vector-icons";
-import { Button } from "react-native-elements";
 
 export default function Add({ navigation }) {
   const [hasCameraPermission, setHasCameraPermission] = useState(null);

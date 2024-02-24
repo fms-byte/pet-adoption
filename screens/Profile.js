@@ -12,6 +12,13 @@ import {
   Alert,
 } from "react-native";
 import { db, auth } from "../firebase";
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  doc,
+} from "firebase/firestore";
 import { Dimensions } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import UserPost from "../components/UserPost";
@@ -38,38 +45,47 @@ const Profile = ({ navigation }) => {
   };
 
   useEffect(() => {
-    db.collection("users")
-      .doc(auth.currentUser.uid)
-      .get()
-      .then((snapshot) => {
-        setUserDetails(snapshot.data());
-      });
+    const unsubscribe = onSnapshot(
+      query(collection(db, "users"), orderBy("creation", "desc")),
+      (snapshot) => {
+        const updatedUserDetails = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          data: doc.data(),
+        }));
+        setUserDetails(updatedUserDetails);
+      }
+    );
 
-    db.collection("profilePosts")
-      .doc(auth.currentUser.uid)
-      .collection("userPosts")
-      .orderBy("creation", "desc")
-      .onSnapshot((snapshot) => {
-        setUserPosts(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
-          }))
-        );
-      });
+    const unsubscribeUserPosts = onSnapshot(
+      query(
+        collection(doc(db, "profilePosts", auth.currentUser.uid), "userPosts"),
+        orderBy("creation", "desc")
+      ),
+      (snapshot) => {
+        const updatedUserPosts = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          data: doc.data(),
+        }));
+        setUserPosts(updatedUserPosts);
+      }
+    );
 
-    db.collection("profilePosts")
-      .doc(auth.currentUser.uid)
-      .collection("userStories")
-      .orderBy("creation", "desc")
-      .onSnapshot((snapshot) => {
-        setUserStories(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            data: doc.data(),
-          }))
-        );
-      });
+    const unsubscribeUserStories = onSnapshot(
+      query(
+        collection(
+          doc(db, "profilePosts", auth.currentUser.uid),
+          "userStories"
+        ),
+        orderBy("creation", "desc")
+      ),
+      (snapshot) => {
+        const updatedUserStories = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          data: doc.data(),
+        }));
+        setUserStories(updatedUserStories);
+      }
+    );
   }, []);
 
   const PostList = () => {
@@ -150,14 +166,17 @@ const Profile = ({ navigation }) => {
             ></View>
           </ImageBackground>
         </View>
-        <View style={styles.profileImageContainer}>
-          <Image
-            source={{
-              uri: userDetails?.imageUrl,
-            }}
-            style={styles.profileImage}
-          />
-        </View>
+        {userDetails.imageUrl && (
+          <View style={styles.profileImageContainer}>
+            <Image
+              source={{
+                uri: userDetails.imageUrl,
+              }}
+              style={styles.profileImage}
+            />
+          </View>
+        )}
+
         <TouchableOpacity
           onPress={() => {
             signOut();
@@ -169,19 +188,21 @@ const Profile = ({ navigation }) => {
         >
           <Feather name="power" color="red" size={35} />
         </TouchableOpacity>
-        <View
-          style={{
-            marginTop: 30,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ fontSize: 30, fontWeight: "bold", color: "black" }}>
-            {userDetails?.name}
-          </Text>
-          <Text style={{ color: "grey", fontSize: 15 }}>
-            {userDetails?.email}
-          </Text>
-        </View>
+        {userDetails.data && (
+          <View
+            style={{
+              marginTop: 30,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ fontSize: 30, fontWeight: "bold", color: "black" }}>
+              {userDetails?.name}
+            </Text>
+            <Text style={{ color: "grey", fontSize: 15 }}>
+              {userDetails?.email}
+            </Text>
+          </View>
+        )}
         <View>
           <View
             style={{

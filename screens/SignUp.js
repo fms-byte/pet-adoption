@@ -1,21 +1,23 @@
 import React, { useState, useLayoutEffect, useEffect } from "react";
-import firebase from "firebase";
-require("firebase/firestore");
-require("firebase/firebase-storage");
+import { setDoc, doc } from "firebase/firestore";
 import { auth, db } from "../firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import {
   StyleSheet,
   Text,
   View,
   KeyboardAvoidingView,
   StatusBar,
+  Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import TopImage from "../components/TopImage";
 import { TextInput } from "react-native";
-import { Button } from "react-native-elements";
+import { Button } from "@rneui/base";
 import { ScrollView, TouchableOpacity } from "react-native-gesture-handler";
 import * as Animatable from "react-native-animatable";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 const SignUp = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [hasGalleryPermission, setHasGalleryPermission] = useState(null);
@@ -23,19 +25,10 @@ const SignUp = ({ navigation }) => {
   const [name, setName] = useState("");
   const [imageUri, setImageUri] = useState("");
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerTitle: "Register",
-      headerTitleStyle: {
-        color: "black",
-        fontWeight: "bold",
-      },
-    });
-  });
-
   useEffect(() => {
     (async () => {
-      const galleryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const galleryStatus =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       setHasGalleryPermission(galleryStatus.status === "granted");
     })();
   }, []);
@@ -54,48 +47,47 @@ const SignUp = ({ navigation }) => {
   };
 
   const uploadImage = async () => {
-    const response = await fetch(imageUri);
-    const blob = await response.blob();
-    const childPath = `profile/images/${Math.random().toString(36)}`;
-    const task = firebase.storage().ref().child(childPath).put(blob);
+    try {
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      const childPath = `profile/images/${Math.random().toString(36)}`;
 
-    const taskProgress = (snapshot) => {
-      console.log("Bytes transferred : " + snapshot.bytesTransferred);
-    };
-
-    const taskCompleted = () => {
-      task.snapshot.ref.getDownloadURL().then((snapshot) => {
-        console.log(snapshot);
-        db.collection("users").doc(auth.currentUser.uid).set({
-          name,
-          email,
-          imageUrl: snapshot,
-        });
+      await setDoc(doc(db, "images", childPath), { image: blob });
+      await setDoc(doc(db, "users", auth.currentUser.uid), {
+        name,
+        email,
+        imageUrl: childPath,
       });
-    };
 
-    const taskError = (snapshot) => {
-      console.log(snapshot);
-    };
-
-    task.on("state_changed", taskProgress, taskError, taskCompleted);
+      console.log("Image uploaded to Firestore");
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const signUp = () => {
-    auth
-      .createUserWithEmailAndPassword(email, password)
-      .then((authUser) => {
-        authUser.user.updateProfile({
-          displayName: name,
+    if (email === "" || password === "" || name === "") {
+      Alert.alert(
+        "Invalid Details",
+        "Please enter all the credentials",
+        [{ text: "OK" }],
+        { cancelable: false }
+      );
+    } else {
+      createUserWithEmailAndPassword(auth, email, password)
+        .then((userCredentials) => {
+          const user = userCredentials.user;
+          setDoc(doc(db, "users", user.uid), {
+            email,
+            password,
+            name,
+            imageUrl: imageUri,
+          });
+        })
+        .catch((error) => {
+          console.error("Error creating user:", error);
         });
-
-        uploadImage();
-      })
-      .catch((error) => alert(error.message));
-
-    setEmail("");
-    setPassword("");
-    setName("");
+    }
   };
 
   return (
@@ -147,7 +139,7 @@ const SignUp = ({ navigation }) => {
             title="Sign Up"
             buttonStyle={{ backgroundColor: "#f9a1bc" }}
             containerStyle={{ width: 250, alignSelf: "center", marginTop: 30 }}
-            onPress={() => signUp()}
+            onPress={signUp}
           />
         </Animatable.View>
       </ScrollView>

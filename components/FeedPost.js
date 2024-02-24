@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   ToastAndroid,
 } from "react-native";
-import { Avatar } from "react-native-elements";
+import { Avatar } from '@rneui/base';
 import * as FileSystem from "expo-file-system";
 import * as MediaLibrary from "expo-media-library";
 import { db } from "../firebase";

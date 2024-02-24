@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { Button } from "react-native-elements";
+import { Button } from '@rneui/base';
 import { StatusBar } from "expo-status-bar";
 import * as Animatable from "react-native-animatable";
 import Onboarding from "../components/Onboarding";

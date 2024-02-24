@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Share,
 } from "react-native";
-import { Avatar } from "react-native-elements";
+import { Avatar } from '@rneui/base';
 import { db } from "../firebase";
 
 import { Ionicons, MaterialIcons } from "react-native-vector-icons";

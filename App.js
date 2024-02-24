@@ -5,8 +5,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import Landing from "./screens/Landing";
 import SignIn from "./screens/SignIn";
 import SignUp from "./screens/SignUp";
-import "./firebase";
-import { auth } from "./firebase";
+import { auth, db } from "./firebase";
 import Main from "./screens/Main";
 import Add from "./screens/Add";
 import Save from "./screens/Save";
@@ -18,6 +17,7 @@ import * as Font from "expo-font";
 
 const Stack = createStackNavigator();
 export default function App() {
+
   const [loggedIn, setLoggedIn] = useState(false);
 
   const loadFonts = async () => {
